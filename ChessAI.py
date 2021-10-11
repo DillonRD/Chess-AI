@@ -4,7 +4,6 @@ import random
 import os
 import sys
 import time
-from IPython.display import clear_output
 import copy
 
 def ChessBoardSetup():
@@ -222,13 +221,6 @@ def GetListOfLegalMoves(board, turn):
 
 # returns True if the current player is in checkmate, else False
 def IsCheckmate(board, turn):
-
-    # call GetPiecesWithLegalMoves() to get all legal moves for the current player
-    # if there is no piece with any valid move
-        # return False
-    # else
-        # return True
-    print(GetListOfLegalMoves(board, turn))
     if IsInCheck(board, turn) and GetListOfLegalMoves(board, turn) == {}:
         return True
     else:
@@ -402,13 +394,11 @@ def evl(board):
 def GetMinMaxMove(board, depth, turn): # Returns the best move 
 
     legalMoves = GetListOfLegalMoves(board, turn)
-    
     best_board = None
     best_move =  None
     for piece in legalMoves:
         for to in legalMoves.get(piece):
-            temp = copy.deepcopy(board)
-            test_board = MovePiece(temp, piece, to)
+            test_board = MovePiece(board, piece, to)
             if turn == "black":
                 board_rating = MinMax(test_board, depth-1, True)
                 if best_board is None or best_board > board_rating:
@@ -424,18 +414,18 @@ def GetMinMaxMove(board, depth, turn): # Returns the best move
                
 
 
-def MinMax(board, depth, max): # Returns  value of the board
+def MinMax(board, depth, move): # Returns  value of the board
      # Base Case
     if depth == 0:
         return evl(board)
      # Recurive Case
-    if max:
+    if move:
         value = -5000
         legalMoves = GetListOfLegalMoves(board, "white")
         for piece in legalMoves:
             for to in legalMoves.get(piece):
                 test_board = MovePiece(board, piece, to)
-                value = max(value, MinMax(test_board, depth-1, max))
+                value = max(value, MinMax(test_board, depth-1, move))
         return value
     else:
         value = 5000
@@ -443,73 +433,103 @@ def MinMax(board, depth, max): # Returns  value of the board
         for piece in legalMoves:
             for to in legalMoves.get(piece):
                 test_board = MovePiece(board, piece, to)
-                value = min(value, MinMax(test_board, depth-1, max))
+                value = min(value, MinMax(test_board, depth-1, move))
         return value
 
-
 # Main Game Loop
-board = ChessBoardSetup()
+def main():
 
-# Continue while not in checkmate or stalemate (<N turns)
-turn = "white" # "white" or "black"
-randomSide = "black" # "white" or "black"
-turns = 0
-N = 100
-depth = 2
-stalemate = False
+    board = ChessBoardSetup()
+    turns = 0
+    turn = "white" 
+    stalemate = False
 
-while not IsCheckmate(board, turn) and turns < N and not stalemate:
-    print()
+    # "white" or "black" for the random ai
+    while True:
+        print("Enter which side you would like to be the random AI (white or black): ")
+        randomSide = str(input()).lower()
+        if randomSide == "black" or randomSide == "white":
+            break  
+        else:
+            print("please try again incorrect input")
+    # Limit before end the program and stalemate is called
+    while True:
+        print("Enter the limit of moves you would like ex(100, 50, 500): ")
+        N = input()
+        if N.isdigit() :
+            print(N + " been selected as the limit of moves")
+            N = int(N)
+            break  
+        else:
+            print("please try again incorrect input")
+    # number of turns to look ahead for the min-max
+    while True:
+        print("Enter the depth of moves you would like the min-max AI to look ahead: ")
+        depth = input()
+        if depth.isdigit() :
+            print(depth + " been selected as depth of moves the min-max will look ahead")
+            depth = int(depth)
+            break  
+        else:
+            print("please try again incorrect input")
+
+    # Continue while not in checkmate or stalemate (<N turns)
+    while not IsCheckmate(board, turn) and turns < N and not stalemate:
+        
+        print("%s to move:" % (turn))
+        DrawBoard(board)
+        
+        # Get the best move for turn, or get the random move for turn based off of randomSide
+        move = None
+
+        if randomSide == turn:
+            move = GetRandomMove(board, turn)
+
+            if move is None:
+                
+                stalemate = True
+                continue
+        else:
+            move = GetMinMaxMove(board, depth, turn)
+            
+            if move is None:
+                stalemate = True
+                continue
+        # Return will look like move = [(x_from, y_from), (x_to, y_to)]
+        board = MovePiece(board, move[0], move[1])
+
+        # write code to take turns and move the pieces
+        time.sleep(0.5)
+        # clears the board after each turn
+        os.system('cls')
+
+        # Changes
+        if turn == "white":
+            turn = "black"
+        else:
+            turn = "white"
+            turns+=1
+
     print("%s to move:" % (turn))
     DrawBoard(board)
-    print(turns)
-    # Get the best move for turn, or get the random move for turn based off of randomSide
-    move = None
-    if randomSide == turn:
-        move = GetRandomMove(board, turn)
 
-        if move is None:
-            
-            stalemate = True
-            continue
+    # Declare Winner
+    if IsCheckmate(board, turn):
+        # Switchback
+        if turn == "white":
+            turn = "black"
+        else:
+            turn = "white"
+        print(turn + " has CHECKMATE")
+      
     else:
-        move = GetMinMaxMove(board, depth, turn)
-        
-        if move is None:
-            stalemate = True
-            continue
-    # Return will look like move = [(x_from, y_from), (x_to, y_to)]
-    board = MovePiece(board, move[0], move[1])
+        # Switchback
+        if turn == "white":
+            turn = "black"
+        else:
+            turn = "white"
+        print(turn + " has STALEMATE")
 
-    # write code to take turns and move the pieces
-    time.sleep(0.5)
-    clear_output()
 
-    # Changes
-    turns+=1
-    if turn == "white":
-        turn = "black"
-    else:
-        turn = "white"
-
-print()
-print("%s to move:" % (turn))
-DrawBoard(board)
-# Declare Winner
-if IsCheckmate(board, turn):
-    # Switchback
-    if turn == "white":
-        turn = "black"
-    else:
-        turn = "white"
-    print(turn + " has")
-    print("CHECKMATE")
-else:
-    # Switchback
-    if turn == "white":
-        turn = "black"
-    else:
-        turn = "white"
-    print(turn + " has")
-    print("STALEMATE")
-
+if __name__ == "__main__":
+    main()
