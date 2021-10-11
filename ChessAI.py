@@ -6,6 +6,9 @@ import sys
 import time
 import copy
 
+horizontal = {0:"a", 1:"b", 2:"c", 3:"d", 4:"e", 5:"f", 6:"g", 7:"h"}
+vertical = {0:"8", 1:"7", 2:"6", 3:"5", 4:"4", 5:"3", 6:"2", 7:"1"}
+
 def ChessBoardSetup():
     # initialize and return a chess board - create a 2D 8x8 array that has the value for each cell
     # USE the following characters for the chess pieces - lower-case for BLACK and upper-case for WHITE
@@ -436,22 +439,98 @@ def MinMax(board, depth, move): # Returns  value of the board
                 value = min(value, MinMax(test_board, depth-1, move))
         return value
 
+
+def player (board, move):
+    possible_moves = {}
+    
+    for i in move.keys():
+        temp_P = (horizontal[i[1]], vertical[i[0]])
+        possible_moves_to = []
+        for j in move[i]:
+            possible_moves_to.append((horizontal[j[1]], vertical[j[0]]))
+            
+            
+        possible_moves[temp_P] =  possible_moves_to
+    print("\nPossible moves that you can make")
+    for keys in possible_moves.keys():
+        print(keys[0] + "" + keys[1] + " to ", end="")
+        for value in possible_moves[keys]:
+            print(value[0] + " or " + value[1] + " ", end="")
+        print()
+    while True:
+        print()
+        break
+
+
 # Main Game Loop
 def main():
-
+    game_mode = False
     board = ChessBoardSetup()
     turns = 0
     turn = "white" 
     stalemate = False
 
-    # "white" or "black" for the random ai
-    while True:
-        print("Enter which side you would like to be the random AI (white or black): ")
-        randomSide = str(input()).lower()
-        if randomSide == "black" or randomSide == "white":
-            break  
+    #choose game mode to play
+    
+    print("Choose 1 for player VS AI anything else for AI vs AI: ")
+    option = str(input()).lower()
+    if option == "1":
+        game_mode = True
+        
+    else:
+        print("AI verses AI has been selected")
+            
+    
+    # AI
+    if game_mode == False:
+        # "white" or "black" for the random ai
+        while True:
+            print("Enter which side you would like to be the random AI (white or black): ")
+            randomSide = str(input()).lower()
+            if randomSide == "black" or randomSide == "white":
+                break  
+            else:
+                print("please try again incorrect input")
+        # number of turns to look ahead for the min-max
+        while True:
+            print("Enter the depth of moves you would like the min-max AI to look ahead: ")
+            depth = input()
+            if depth.isdigit() :
+                print(depth + " been selected as depth of moves the min-max will look ahead")
+                depth = int(depth)
+                break  
+            else:
+                print("please try again incorrect input")
+    # Player
+    else:
+        #chose AI
+        print("Choose the AI 1 for min-max anything else is the random AI: ")
+        option = str(input()).lower()
+        if option == "1":
+            option = "min_max"
+        
         else:
-            print("please try again incorrect input")
+            option = "random"
+
+        if option == "min_max":
+            while True:
+                print("Enter the depth of moves you would like the min-max AI to look ahead: ")
+                depth = input()
+                if depth.isdigit() :
+                    print(depth + " been selected as depth of moves the min-max will look ahead")
+                    depth = int(depth)
+                    break  
+                else:
+                    print("please try again incorrect input")
+        
+        print("Enter Black to start on black side and anything else for white: ")
+        side = str(input()).lower()
+        if not side == "black":
+            side = "white"
+
+            
+
+        
     # Limit before end the program and stalemate is called
     while True:
         print("Enter the limit of moves you would like ex(100, 50, 500): ")
@@ -462,17 +541,7 @@ def main():
             break  
         else:
             print("please try again incorrect input")
-    # number of turns to look ahead for the min-max
-    while True:
-        print("Enter the depth of moves you would like the min-max AI to look ahead: ")
-        depth = input()
-        if depth.isdigit() :
-            print(depth + " been selected as depth of moves the min-max will look ahead")
-            depth = int(depth)
-            break  
-        else:
-            print("please try again incorrect input")
-
+    
     # Continue while not in checkmate or stalemate (<N turns)
     while not IsCheckmate(board, turn) and turns < N and not stalemate:
         
@@ -481,20 +550,42 @@ def main():
         
         # Get the best move for turn, or get the random move for turn based off of randomSide
         move = None
+        if game_mode == False:
+            if randomSide == turn:
+                move = GetRandomMove(board, turn)
 
-        if randomSide == turn:
-            move = GetRandomMove(board, turn)
-
-            if move is None:
+                if move is None:
+                    
+                    stalemate = True
+                    continue
+            else:
+                move = GetMinMaxMove(board, depth, turn)
                 
-                stalemate = True
-                continue
+                if move is None:
+                    stalemate = True
+                    continue
         else:
-            move = GetMinMaxMove(board, depth, turn)
-            
-            if move is None:
-                stalemate = True
-                continue
+            if turn == side:
+                move = player(board, GetListOfLegalMoves(board, turn))
+                
+                if move is None:
+                    stalemate = True
+                    continue
+            else:
+                if option == "random":
+                    move = GetRandomMove(board, turn)
+
+                    if move is None:
+                    
+                        stalemate = True
+                        continue
+                else:
+                    move = GetMinMaxMove(board, depth, turn)
+                
+                    if move is None:
+                        stalemate = True
+                        continue
+
         # Return will look like move = [(x_from, y_from), (x_to, y_to)]
         board = MovePiece(board, move[0], move[1])
 
