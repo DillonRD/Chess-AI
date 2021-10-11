@@ -5,9 +5,13 @@ import os
 import sys
 import time
 import copy
+import re
 
-horizontal = {0:"a", 1:"b", 2:"c", 3:"d", 4:"e", 5:"f", 6:"g", 7:"h"}
-vertical = {0:"8", 1:"7", 2:"6", 3:"5", 4:"4", 5:"3", 6:"2", 7:"1"}
+horizontal_chess_note = {0:"a", 1:"b", 2:"c", 3:"d", 4:"e", 5:"f", 6:"g", 7:"h"}
+vertical_chess_note = {0:"8", 1:"7", 2:"6", 3:"5", 4:"4", 5:"3", 6:"2", 7:"1"}
+
+horizontal_element = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7}
+vertical_element = {"8":0, "7":1, "6":2, "5":3, "4":4, "3":5, "2":6, "1":7}
 
 def ChessBoardSetup():
     # initialize and return a chess board - create a 2D 8x8 array that has the value for each cell
@@ -71,10 +75,23 @@ def DrawBoard(board):
     # . . . . . . . .
     # P P P P P P P P
     # R T B Q K B T R
+    col = ["A","B","C","D","E","F","G","H"]
+    row = 8
+    print(" ", end = " ")
+    for z in col:
+        print(z, end = " ")
+    print()
     for i in range(8):
+        print(row, end = " ")
         for j in range(8):
             print(board[i][j], end = " ")
+        print(row, end = " ")
+        row -= 1
         print()
+    print(" ", end = " ")
+    for z in col:
+        print(z, end = " ")
+    print()
 
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -440,14 +457,18 @@ def MinMax(board, depth, move): # Returns  value of the board
         return value
 
 
-def player (board, move):
+def player (board, turn):
+    moves = GetListOfLegalMoves(board, turn)
+    if moves is None:
+        return moves
+
     possible_moves = {}
     
-    for i in move.keys():
-        temp_P = (horizontal[i[1]], vertical[i[0]])
+    for i in moves.keys():
+        temp_P = (horizontal_chess_note[i[1]], vertical_chess_note[i[0]])
         possible_moves_to = []
-        for j in move[i]:
-            possible_moves_to.append((horizontal[j[1]], vertical[j[0]]))
+        for j in moves[i]:
+            possible_moves_to.append((horizontal_chess_note[j[1]], vertical_chess_note[j[0]]))
             
             
         possible_moves[temp_P] =  possible_moves_to
@@ -455,21 +476,48 @@ def player (board, move):
     for keys in possible_moves.keys():
         print(keys[0] + "" + keys[1] + " to ", end="")
         for value in possible_moves[keys]:
-            print(value[0] + " or " + value[1] + " ", end="")
+            print(value[0] + "" + value[1] + " ", end="")
         print()
+
     while True:
-        print()
-        break
+        print("Enter the move you would like to make seperated by a comma ex(b7,b4): ")
+        user_move = str(input()).lower()
+        user_move = user_move.replace(" ", "")
+        if not re.match("[a-h][1-8],[a-h][1-8]", user_move):
+            print("Please Try agian: Incorrect input")
+        else:
+            user_move = user_move.split(",")
+            piece = list(user_move[0])
+            piece = (piece[0], piece[1])
+
+            if piece in possible_moves:
+
+                move = list(user_move[1])
+                move = (move[0], move[1])
+                if move in possible_moves[piece]:
+                    break
+                else:
+                    print("Error move is not in possible moves")
+                    
+            else:
+                print("Error move is not in possible moves")
+    piece = (vertical_element[piece[1]], horizontal_element[piece[0]])            
+    
+    move = (vertical_element[move[1]], horizontal_element[move[0]])
+    return (piece, move)
+
 
 
 # Main Game Loop
 def main():
+    
+    
     game_mode = False
     board = ChessBoardSetup()
     turns = 0
     turn = "white" 
     stalemate = False
-
+    
     #choose game mode to play
     
     print("Choose 1 for player VS AI anything else for AI vs AI: ")
@@ -566,7 +614,7 @@ def main():
                     continue
         else:
             if turn == side:
-                move = player(board, GetListOfLegalMoves(board, turn))
+                move = player(board,  turn)
                 
                 if move is None:
                     stalemate = True
@@ -590,17 +638,17 @@ def main():
         board = MovePiece(board, move[0], move[1])
 
         # write code to take turns and move the pieces
-        time.sleep(0.5)
+        time.sleep(1)
         # clears the board after each turn
-        os.system('cls')
+        
 
         # Changes
+        turns+=1
         if turn == "white":
             turn = "black"
         else:
             turn = "white"
-            turns+=1
-
+            
     print("%s to move:" % (turn))
     DrawBoard(board)
 
